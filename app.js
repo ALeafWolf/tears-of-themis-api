@@ -65,9 +65,11 @@ const CardPoolHistorySchema = new Schema({
     startDate: String,
     endDate: String,
     type: String,
-    cards: Array
+    cards: Array,
+    bid:String,
+    bv: String
 })
-const CardPoolHistory = mongoose.model(`card_pool_history`, CardPoolHistorySchema, `skill_level_up_rss`)
+const CardPoolHistory = mongoose.model(`card_pool_history`, CardPoolHistorySchema, `card_pool_history`)
 
 app.get("/api", (req, res) => {
     res.status(200).send({"message": "Welcome to Tears of Themis API."})
