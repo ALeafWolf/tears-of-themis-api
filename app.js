@@ -88,7 +88,7 @@ CardPoolHistorySchema.virtual('cardObj', {
     localField: 'cards',
     foreignField: 'name'
 });
-const CardPoolHistory = mongoose.model(`card_pool_history`, CardPoolHistorySchema);
+const CardPoolHistory = mongoose.model(`card_pool_history`, CardPoolHistorySchema, `card_pool_history`);
 
 const MerchSchema = new Schema({
     name: String,
@@ -167,12 +167,6 @@ app.get("/api/card/:id", (req, res) => {
         }
     )
 });
-
-//GET one card: wrong format
-app.get("/api/cn/cards/:id", (req, res) => {
-    res.status(200).send({ "message": `For find one card, use /card/:id` })
-});
-
 
 /*--------------------Skill--------------------*/
 //GET skills in all language
