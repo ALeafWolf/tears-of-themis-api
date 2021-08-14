@@ -6,7 +6,7 @@ app.use(express.json({
 }));
 app.use(cors());
 
-//mongo
+//mongoDB
 const mongoose = require("mongoose");
 const mongoURL = "mongodb+srv://user_01:uuc8PcWI9gW1cnkt@cluster0.vf3iw.mongodb.net/ToT?retryWrites=true&w=majority"
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false }
@@ -32,17 +32,19 @@ const Schema = mongoose.Schema;
 
 const CardSchema = new Schema({
     _id: Schema.Types.ObjectId,
-    id: String,
-    name: String,
-    nameEN: String,
+    ref: String,
+    name: {
+        zh: String,
+        en: String,
+        ko: String
+    },
     type: String,
     rarity: String,
     character: String,
-    characterEN: String,
     skills: [String],
     influence: String,
     defense: String,
-    obtainedFrom: Array,
+    obtainedFrom: [String],
 }, {
     toJSON: {
         virtuals: true,
@@ -51,25 +53,35 @@ const CardSchema = new Schema({
 const SkillSchema = new Schema({
     _id: Schema.Types.ObjectId,
     ref: String,
-    name: String,
+    name: {
+        zh: String,
+        en: String,
+        ko: String
+    },
     nameEN: String,
     character: String,
     type: String,
-    rarity: Array,
-    description: String,
-    descriptionEN: String,
+    rarity: String,
+    description: {
+        zh: String,
+        en: String,
+        ko: String
+    },
     nums: Array,
-    function: String
+    function: String,
+    slot: Number,
+    id: String
 });
 CardSchema.virtual('skillObj', {
     ref: 'skills',
     localField: 'skills',
-    foreignField: 'name'
+    foreignField: 'name.zh'
 });
 const Card = mongoose.model("cards", CardSchema);
 const Skill = mongoose.model(`skills`, SkillSchema);
 
 const CardPoolHistorySchema = new Schema({
+    _id: Schema.Types.ObjectId,
     startDate: String,
     endDate: String,
     type: String,
@@ -86,7 +98,7 @@ const CardPoolHistorySchema = new Schema({
 CardPoolHistorySchema.virtual('cardObj', {
     ref: 'cards',
     localField: 'cards',
-    foreignField: 'name'
+    foreignField: 'name.zh'
 });
 const CardPoolHistory = mongoose.model(`card_pool_history`, CardPoolHistorySchema, `card_pool_history`);
 
@@ -114,10 +126,9 @@ const MerchSeriesSchema = new Schema({
     _id: String,
     name: String,
     type: String,
-    typeEN: String,
     sellTime: [String]
 });
-const MerchSeries = mongoose.model(`merch_series`, MerchSeriesSchema);
+const MerchSeries = mongoose.model(`merch_series`, MerchSeriesSchema, `merch_series`);
 MerchSchema.virtual('seriesObj', {
     ref: 'merch_series',
     localField: 'series',
@@ -138,12 +149,13 @@ app.get("/api", (req, res) => {
 /*--------------------Card--------------------*/
 // GET cards in all language
 app.get("/api/cards", (req, res) => {
-    Card.find().populate({ path: 'skillObj', select: '_id ref' }).exec().then(
+    Card.find().sort('_id').populate({ path: 'skillObj', select: '_id ref name' }).exec().then(
         (results) => {
             res.status(200).send(results);
         }
     ).catch(
         (err) => {
+            console.log(err);
             res.status(500).send({ "message": "Error when getting cards from database." })
         }
     )
@@ -152,7 +164,7 @@ app.get("/api/cards", (req, res) => {
 //GET one card in all language
 app.get("/api/card/:id", (req, res) => {
     let input = req.params.id;
-    Card.find({ '_id': input }).populate({ path: 'skillObj', select: '_id ref nameEN character type description descriptionEN nums' }).exec().then(
+    Card.find({ '_id': input }).populate({ path: 'skillObj', select: '_id ref name character type description nums' }).exec().then(
         (results) => {
             if (results.length === 0) {
                 res.status(404).send({ "message": `Card ${input} does not found` })
@@ -171,7 +183,7 @@ app.get("/api/card/:id", (req, res) => {
 /*--------------------Skill--------------------*/
 //GET skills in all language
 app.get("/api/skills", (req, res) => {
-    Skill.find().exec().then(
+    Skill.find().sort('_id').exec().then(
         (results) => {
             res.status(200).send(results);
         }
@@ -201,15 +213,10 @@ app.get("/api/skill/:id", (req, res) => {
     )
 });
 
-//GET one skill: wrong format
-app.get("/api/skills/:name", (req, res) => {
-    res.status(200).send({ "message": `For find one skill, use /cards/:name` })
-});
-
 /*--------------------Vision History--------------------*/
 // GET rate up vision history for all servers
 app.get("/api/visionhistory", (req, res) => {
-    CardPoolHistory.find().populate({ path: 'cardObj', select: '_id id character' }).exec().then(
+    CardPoolHistory.find().sort('_id').populate({ path: 'cardObj', select: '_id ref character' }).exec().then(
         (results) => {
             res.status(200).send(results);
         }
@@ -256,7 +263,7 @@ app.get("/api/merch/:id", (req, res) => {
 
 //GET ALL merch series
 app.get("/api/merchseries", (req, res) => {
-    MerchSeries.find().exec().then(
+    MerchSeries.find().sort('_id').exec().then(
         (results) => {
             res.status(200).send(results);
         }
