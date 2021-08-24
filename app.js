@@ -231,7 +231,7 @@ app.get("/api/visionhistory", (req, res) => {
 /*--------------------Merch--------------------*/
 //GET ALL merchs
 app.get("/api/merchs", (req, res) => {
-    Merch.find().populate({ path: 'seriesObj', select: 'name type' }).exec().then(
+    Merch.find().populate({ path: 'seriesObj' }).exec().then(
         (results) => {
             res.status(200).send(results);
         }
