@@ -111,7 +111,7 @@ const MerchSchema = new Schema({
     productSize: String,
     productDescription: String,
     price: String,
-    sellDate: Number,
+    sellDate: [Number],
     character: String,
     images: [String],
     weibo: String,
