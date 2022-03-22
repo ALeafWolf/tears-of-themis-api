@@ -8,7 +8,7 @@ app.use(cors());
 
 //mongoDB
 const mongoose = require("mongoose");
-const mongoURL = "mongodb+srv://user_01:uuc8PcWI9gW1cnkt@cluster0.vf3iw.mongodb.net/ToT?retryWrites=true&w=majority"
+const mongoURL = "mongodb+srv://user_01:uuc8PcWI9gW1cnkt@cluster0.vf3iw.mongodb.net/ToT?retryWrites=true&w=majority";
 const connectionOptions = { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false }
 
 const HTTP_PORT = process.env.PORT || 8080;
@@ -80,6 +80,28 @@ CardSchema.virtual('skillObj', {
 const Card = mongoose.model("cards", CardSchema);
 const Skill = mongoose.model(`skills`, SkillSchema);
 
+const CardReleaseHistorySchema = new Schema({
+    _id: Schema.Types.ObjectId,
+    startDate: String,
+    endDate: String,
+    type: String,
+    cards: Array,
+    bid: String,
+    bv: String,
+    twitter: String,
+    youtube: String
+}, {
+    toJSON: {
+        virtuals: true,
+    },
+});
+CardReleaseHistorySchema.virtual('cardObj', {
+    ref: 'cards',
+    localField: 'cards',
+    foreignField: 'name.zh'
+});
+const CardReleaseHistory = mongoose.model(`card_release_history`, CardReleaseHistorySchema, `card_release_history`);
+
 const CardPoolHistorySchema = new Schema({
     _id: Schema.Types.ObjectId,
     startDate: String,
@@ -137,7 +159,31 @@ MerchSchema.virtual('seriesObj', {
 });
 const Merch = mongoose.model(`merchs`, MerchSchema);
 
+const UpdateItemSchema = new Schema({
+    _id: String,
+    cards: [String],
+    skills: [String],
+    merchs: [String]
+}, {
+    toJSON: {
+        virtuals: true,
+    },
+});
+UpdateItemSchema.virtual('cardObj', {
+    ref: 'cards',
+    localField: 'cards',
+    foreignField: 'ref'
+});
+UpdateItemSchema.virtual('merchObj', {
+    ref: 'merchs',
+    localField: 'merchs',
+    foreignField: 'name'
+});
+const UpdateItem = mongoose.model(`update_items`, UpdateItemSchema);
 
+
+
+/*-------------------------END POINTS-------------------------*/
 app.get("/", (req, res) => {
     res.status(200).send({ "message": "Welcome to Tears of Themis API. Author: ALeafWolf" })
 });
@@ -213,6 +259,21 @@ app.get("/api/skill/:id", (req, res) => {
     )
 });
 
+/*--------------------Card Release History--------------------*/
+// GET card release history for all servers
+app.get("/api/cardreleasehistory", (req, res) => {
+    CardReleaseHistory.find().sort('_id').populate({ path: 'cardObj', select: '_id ref character' }).exec().then(
+        (results) => {
+            res.status(200).send(results);
+        }
+    ).catch(
+        (err) => {
+            console.log(err)
+            res.status(500).send({ "message": "Error when getting card release history from database." })
+        }
+    )
+});
+
 /*--------------------Vision History--------------------*/
 // GET rate up vision history for all servers
 app.get("/api/visionhistory", (req, res) => {
@@ -223,7 +284,7 @@ app.get("/api/visionhistory", (req, res) => {
     ).catch(
         (err) => {
             console.log(err)
-            res.status(500).send({ "message": "Error when getting card pool history from database." })
+            res.status(500).send({ "message": "Error when getting vision history from database." })
         }
     )
 });
@@ -270,6 +331,20 @@ app.get("/api/merchseries", (req, res) => {
     ).catch(
         (err) => {
             res.status(500).send({ 'message': `Error when getting merchs from database.\n${err}` })
+        }
+    )
+});
+
+/*--------------------RECENT UPDATE--------------------*/
+//GET ALL merchs
+app.get("/api/updateitems", (req, res) => {
+    UpdateItem.find().populate({ path: 'cardObj', select: 'ref character' }).populate({ path: 'merchObj', select: 'images' }).exec().then(
+        (results) => {
+            res.status(200).send(results);
+        }
+    ).catch(
+        (err) => {
+            res.status(500).send({ 'message': `Error when getting recent update items from database.\n${err}` })
         }
     )
 });
